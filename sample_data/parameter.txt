@@ -1,0 +1,3 @@
+# vf,dvf,num,correct,min_size,max_distance
+2 1 2 1 100 8.00000
+5 2 4 1 100 8.10000
