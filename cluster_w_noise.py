@@ -8,17 +8,13 @@ from sklearn.cluster import DBSCAN
 
 def parse_meta_from_name(stem):
     # Parse vf / dvf / cluster count encoded in folder name
-    tokens = stem.split("_")
-    vf = int(tokens[1])
-    dvf = int(tokens[3])
-    num = int(tokens[5])
-    return vf, dvf, num
+    t = stem.split("_")
+    return int(t[1]), int(t[3]), int(t[5])
 
 
 def load_train_mask_from_mat(mat_path):
     # Load binary particle mask from .mat file
-    ms = sio.loadmat(mat_path)["TrainData"][0][0][2]
-    return ms
+    return sio.loadmat(mat_path)["TrainData"][0][0][2]
 
 
 def mask_to_xy(mask2d):
