@@ -23,7 +23,7 @@ def load_train_mask_from_mat(mat_path):
 
 def mask_to_xy(mask2d):
     # Convert binary mask to particle coordinate list
-    xy = np.argwhere(mask2d == 1).astype(float)
+    xy = np.argwhere(mask2d == 1).astype(float) #(N,2)
     if xy.size == 0:
         return xy, np.array([]), np.array([])
     return xy, xy[:, 0], xy[:, 1]
@@ -40,31 +40,33 @@ def periodic_precomputed_distance(xy, L=400.0):
         pd[pd > (L * 0.5)] -= L
         total = pd**2 if total is None else total + pd**2
 
-    return squareform(np.sqrt(total))
+    return squareform(np.sqrt(total)) #(N,N)
 
 
 def dbscan_search(square, vf, dvf, num, tol=0.1):
     # Grid search over DBSCAN parameters to match target cluster count
+    bestscore=float('inf')
     best = None
-    for n in range(100, 140):
-        for m in np.arange(8.0, 11.0, 0.1):
+    for n in range(100, 140): #min_samples: min# of points required in radius of a point to be core point
+        for m in np.arange(8.0, 11.0, 0.1): # eps: neighborhood radius
             db = DBSCAN(eps=float(m), min_samples=int(n),
-                        metric="precomputed").fit(square)
+                        metric="precomputed").fit(square) # use distant matrix
             labels = db.labels_
             n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
             n_noise_ = int(np.sum(labels == -1))
 
             guess_avf = (vf / 100.0) - (n_noise_ / 160000.0)
-            denom = (vf - dvf) / 100.0
-            score_avf = guess_avf / denom if denom != 0 else np.inf
+            true_avf = (vf - dvf) / 100.0
+            score_avf = guess_avf / true_avf if true_avf != 0 else np.inf #ideally 1
 
-            ok = (n_clusters_ == num) and (abs(score_avf - 1.0) < tol)
+            ok = (n_clusters_ == num) and (abs(score_avf - 1.0) < tol) # two srandard to end searching
             if ok:
                 return db, labels, n_clusters_, n_noise_, score_avf, int(n), float(m), 1
 
-            if best is None:
+            if (n_clusters_ == num) and abs(score_avf - 1.0) < bestscore:
                 best = (db, labels, n_clusters_, n_noise_,
                         score_avf, int(n), float(m), 0)
+                bestscore=abs(score_avf - 1.0)
 
     return best
 
@@ -78,9 +80,9 @@ def list_samples(sample_data_dir):
     )
     samples = []
     for sub in subs:
-        mat_path = os.path.join(sample_data_dir, sub, sub + ".mat")
+        mat_path = os.path.join(sample_data_dir, sub, sub + ".mat") #/data/VF.../VF....mat
         if os.path.exists(mat_path) and sub.startswith("VF_"):
-            samples.append((sub, mat_path))
+            samples.append((sub, mat_path)) #[("VF...", "/data/VF.../VF....mat"),...
     return samples
 
 
