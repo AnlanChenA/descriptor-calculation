@@ -33,7 +33,7 @@ def mask_to_xy(ms):
     xy = np.argwhere(ms == 1).astype(int)
     if xy.size == 0:
         return xy, np.array([], dtype=int), np.array([], dtype=int)
-    return xy, xy[:, 0], xy[:, 1]
+    return xy, xy[:, 0], xy[:, 1] #(N,2), (N,), (N,)
 
 
 def make_cross_kernel():
@@ -55,24 +55,24 @@ def boundary_from_mask(a, kernel, iters=0):
     b = a.astype(bool)
     if iters > 0:
         b = binary_dilation(b, structure=kernel, iterations=iters)
-        b = binary_erosion(b, structure=kernel, iterations=iters)
-    bd = binary_dilation(~b, structure=kernel) & b
+        b = binary_erosion(b, structure=kernel, iterations=iters) # now solid inside
+    bd = binary_dilation(~b, structure=kernel) & b # find boundary
     return bd.astype(int)
 
 
 def compute_ifiller(ms, labels, num_clusters, kernel):
     _, x, y = mask_to_xy(ms)
 
-    single = np.where(labels == -1)[0]
+    single = np.where(labels == -1)[0] # indices of all elements in labels that are equal to -1
     single_mask = labels_to_mask(x, y, single)
-    bound1 = boundary_from_mask(single_mask, kernel, iters=0)
+    bound1 = boundary_from_mask(single_mask, kernel, iters=0) ## singles: no need to really do dilation-erosion
     count1 = int(np.count_nonzero(bound1 == 1))
 
     count2 = 0
     bound = bound1.copy()
 
     for k in range(num_clusters):
-        cluster = np.where(labels == k)[0]
+        cluster = np.where(labels == k)[0] # indices of all elements in labels that are equal to k
         cluster_mask = labels_to_mask(x, y, cluster)
         bound2 = boundary_from_mask(cluster_mask, kernel, iters=5)
         count2 += int(np.count_nonzero(bound2 == 1))
